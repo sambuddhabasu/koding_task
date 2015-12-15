@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -11,33 +10,9 @@ import (
 	"github.com/streadway/amqp"
 )
 
-var EXCHANGE_NAME string = "request_exchange"
-
-func failOnError(err error, msg string) {
-	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
-		panic(fmt.Sprintf("%s: %s", msg, err))
-	}
-}
-
-type Operation struct {
-	Path    string `json:"path"`
-	Type    string `json:"type"`
-	Check   string `json:"check"`
-	Process string `json:"process"`
-	Name    string `json:"name"`
-}
-
-type Response struct {
-	Name     string
-	Value    bool
-	Hostname string
-	Ip       string
-}
-
 func getIpAddress() string {
 	addrs, err := net.InterfaceAddrs()
-	failOnError(err, "Failed to get IP address")
+	FailOnError(err, "Failed to get IP address")
 
 	for _, address := range addrs {
 		// Check the address type and make sure it is not loopback
@@ -87,20 +62,20 @@ func serveOperation(oper Operation, ch *amqp.Channel, q string) {
 			ContentType: "text/plain",
 			Body:        []byte(body),
 		})
-	failOnError(err, "Failed to respond to message")
+	FailOnError(err, "Failed to respond to message")
 	log.Println("Served query:", resp.Name)
 }
 
 func main() {
 	// Connect to RabbitMQ
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	failOnError(err, "Failed to connect to RabbitMQ")
+	FailOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 	log.Println("Connected to RabbitMQ")
 
 	// Create a channel
 	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
+	FailOnError(err, "Failed to open a channel")
 	defer ch.Close()
 	log.Println("Opened a channel")
 
@@ -114,7 +89,7 @@ func main() {
 		false,         // no-wait
 		nil,           // arguments
 	)
-	failOnError(err, "Failed to declare an exchange")
+	FailOnError(err, "Failed to declare an exchange")
 	log.Println("Exchange declared:", EXCHANGE_NAME)
 
 	// Declare queue
@@ -126,7 +101,7 @@ func main() {
 		false, // no-wait
 		nil,   // arguments
 	)
-	failOnError(err, "Failed to declare a queue")
+	FailOnError(err, "Failed to declare a queue")
 	log.Println("Queue declared:", q.Name)
 
 	// Bind queue with exchange
@@ -136,7 +111,7 @@ func main() {
 		"logs", // exchange
 		false,
 		nil)
-	failOnError(err, "Failed to bind a queue")
+	FailOnError(err, "Failed to bind a queue")
 	log.Println("Bound queue:", q.Name, "with exchange:", EXCHANGE_NAME)
 
 	msgs, err := ch.Consume(
@@ -148,7 +123,7 @@ func main() {
 		false,  // no-wait
 		nil,    // args
 	)
-	failOnError(err, "Failed to register a consumer")
+	FailOnError(err, "Failed to register a consumer")
 
 	forever := make(chan bool)
 

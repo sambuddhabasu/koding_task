@@ -10,15 +10,11 @@ import (
 	"github.com/streadway/amqp"
 )
 
-var EXCHANGE_NAME string = "request_exchange"
 var QUERIES int = 0
 var QUERY_DONE int = 0
 
-func failOnError(err error, msg string) {
-	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
-		panic(fmt.Sprintf("%s: %s", msg, err))
-	}
+type OperationCollection struct {
+	OperationName map[string]*Operation
 }
 
 func readLines(path string) (string, error) {
@@ -29,25 +25,6 @@ func readLines(path string) (string, error) {
 	return string(contents), nil
 }
 
-type Operation struct {
-	Path    string `json:"path"`
-	Type    string `json:"type"`
-	Check   string `json:"check"`
-	Process string `json:"process"`
-	Name    string `json:"name"`
-}
-
-type OperationCollection struct {
-	OperationName map[string]*Operation
-}
-
-type Response struct {
-	Name     string
-	Value    bool
-	Hostname string
-	Ip       string
-}
-
 func main() {
 	var servers int
 	fmt.Printf("Enter number of servers: ")
@@ -56,13 +33,13 @@ func main() {
 
 	// Connect to RabbitMQ
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	failOnError(err, "Failed to connect to RabbitMQ")
+	FailOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 	log.Println("Connected to RabbitMQ")
 
 	// Create a channel
 	channel, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
+	FailOnError(err, "Failed to open a channel")
 	defer channel.Close()
 	log.Println("Opened a channel")
 
@@ -76,10 +53,10 @@ func main() {
 		false,         // no-wait
 		nil,           // arguments
 	)
-	failOnError(err, "Failed to declare an exchange")
+	FailOnError(err, "Failed to declare an exchange")
 	log.Println("Exchange declared:", EXCHANGE_NAME)
 
-	// Dec;are the response queue
+	// Declare the response queue
 	resp_q, err := channel.QueueDeclare(
 		"",    // name
 		false, // durable
@@ -88,7 +65,7 @@ func main() {
 		false, // no-wait
 		nil,   // arguments
 	)
-	failOnError(err, "Failed to declare a queue")
+	FailOnError(err, "Failed to declare a queue")
 	log.Println("Queue declared:", resp_q.Name)
 
 	msgs, err := channel.Consume(
@@ -100,17 +77,17 @@ func main() {
 		false,       // no-wait
 		nil,         // args
 	)
-	failOnError(err, "Failed to register a consumer")
+	FailOnError(err, "Failed to register a consumer")
 
 	// Read from operations file
 	lines, err := readLines("operation.txt")
-	failOnError(err, "Failed to read the operations file")
+	FailOnError(err, "Failed to read the operations file")
 
 	// Parse the operations
 	var operations OperationCollection
 	bytes := []byte(lines)
 	err = json.Unmarshal(bytes, &operations.OperationName)
-	failOnError(err, "Failed to parse the operations")
+	FailOnError(err, "Failed to parse the operations")
 	log.Println("Read and parsed queries")
 
 	var result map[string][]Response = make(map[string][]Response)
@@ -131,7 +108,7 @@ func main() {
 				Body:        []byte(body),
 				ReplyTo:     resp_q.Name,
 			})
-		failOnError(err, fmt.Sprintf("Failed to publish message: %s", body))
+		FailOnError(err, fmt.Sprintf("Failed to publish message: %s", body))
 		log.Println("Querying:", k)
 	}
 
