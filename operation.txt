@@ -1,0 +1,15 @@
+{
+	"check_etc_hosts_has_8888": {
+		"path": "/etc/hosts", 
+		"type": "file_contains", 
+		"check": "8.8.8.8"
+	}, 
+	"check_kite_config_file_exists": {
+		"path": "/Users/sambuddhabasu/Desktop/screenshot.png", 
+		"type": "file_exists"
+	},
+	"check_init_running": {
+		"process": "bash",
+		"type": "process_running"
+	}
+}
