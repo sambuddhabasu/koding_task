@@ -5,10 +5,10 @@
 		"check": "8.8.8.8"
 	}, 
 	"check_kite_config_file_exists": {
-		"path": "/Users/sambuddhabasu/Desktop/screenshot.png", 
+		"path": "/etc/host/koding/kite.conf", 
 		"type": "file_exists"
 	},
-	"check_init_running": {
+	"check_bash_running": {
 		"process": "bash",
 		"type": "process_running"
 	}
